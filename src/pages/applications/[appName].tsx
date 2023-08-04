@@ -1,42 +1,57 @@
-import "../styles/globals.css";
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/router";
+import { FaSpinner } from "react-icons/fa";
+import { API_ENDPOINTS } from "../../apiConfig"; // Adjust the path if needed
 import {
   useTable,
   useGlobalFilter,
   useFilters,
-  useSortBy, // Add useSortBy here
+  useSortBy,
+  TableInstance,
+  Cell,
   usePagination,
 } from "react-table";
+import Link from "next/link";
 
-import { API_ENDPOINTS } from "@src/apiConfig"; // Using the path mapping
-
-const GlobalFilter = ({ filter, setFilter }) => {
+const GlobalFilter = ({
+  filter,
+  setFilter,
+}: {
+  filter: string;
+  setFilter: Function;
+}) => {
   return (
-    <span>
-      Search:{" "}
+    <div className="flex justify-end mb-4">
+      <span className="mr-2">Search:</span>
       <input
-        className="px-2 py-1 border rounded"
         value={filter || ""}
         onChange={(e) => setFilter(e.target.value)}
+        className="border rounded-md px-2 py-1"
       />
-    </span>
+    </div>
   );
 };
 
-const CorePage = () => {
-  const [coreData, setCoreData] = useState([]);
+const ApplicationSinglePage = () => {
+  const router = useRouter();
+  const { appName } = router.query;
+
+  const [applicationData, setApplicationData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    setIsLoading(true);
     // Fetch data from the API
-    fetch(API_ENDPOINTS.core)
+    fetch(`${API_ENDPOINTS.applications}/${appName}`)
       .then((response) => response.json())
       .then((data) => {
         // Update the state with the fetched data
-        setCoreData(data);
+        setApplicationData(data);
+        setIsLoading(false);
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
+        setIsLoading(false);
       });
   }, []);
 
@@ -118,36 +133,46 @@ const CorePage = () => {
     getTableBodyProps,
     headerGroups,
     prepareRow,
-    page, // paginated data to render
-    nextPage, // function to navigate to next page
-    previousPage, // function to navigate to previous page
-    canNextPage, // check if next page is available
-    canPreviousPage, // check if previous page is available
-    state, // state of the table
+    page,
+    nextPage,
+    previousPage,
+    canNextPage,
+    canPreviousPage,
+    state,
     setGlobalFilter,
     pageCount,
-  } = useTable(
+  }: TableInstance<object> = useTable(
     {
       columns,
-      data: coreData,
+      data: applicationData,
       initialState: { pageIndex: 0 },
     },
     useGlobalFilter,
     useFilters,
-    useSortBy, // Add useSortBy here
+    useSortBy,
     usePagination
   );
 
   return (
-    <div className="container mx-auto mt-8">
-      <h1 className="text-xl font-semibold mb-4">Core Endpoint Data</h1>
+    <div className="container mx-auto mt-8 mb-10">
+      <h1 className="text-xl font-bold mb-0 flex items-center justify-center">
+        {appName}
+      </h1>
 
-      <div className="mb-4">
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="flex items-center justify-center">
+          <FaSpinner className="animate-spin mr-2" />
+          Loading...
+        </div>
+      )}
+
+      <div className="flex mb-px">
         <Link
           href="/"
           className="px-4 py-2 rounded bg-blue-500 hover:bg-blue-600 text-white"
         >
-          Back to Landing Page
+          Home
         </Link>
       </div>
 
@@ -156,7 +181,7 @@ const CorePage = () => {
 
       {/* Table */}
       <table {...getTableProps()} className="border-collapse border w-full">
-        <thead className="bg-gray-200">
+        <thead className="bg-blue-200">
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
               {headerGroup.headers.map((column) => (
@@ -182,8 +207,8 @@ const CorePage = () => {
           {page.map((row) => {
             prepareRow(row);
             return (
-              <tr {...row.getRowProps()}>
-                {row.cells.map((cell) => {
+              <tr {...row.getRowProps()} className="hover:bg-gray-200">
+                {row.cells.map((cell: Cell) => {
                   return (
                     <td {...cell.getCellProps()} className="px-4 py-2">
                       {cell.render("Cell")}
@@ -231,4 +256,4 @@ const CorePage = () => {
   );
 };
 
-export default CorePage;
+export default ApplicationSinglePage;
